@@ -62,6 +62,24 @@ terminator --version
 terminator -s "whoami"
 ```
 
+### Windows note (cmd / PowerShell)
+
+On Windows, `terminator` may open an editor (for example VS Code) instead of running the CLI. This is a Windows npm shim issue with `.mjs` files. If that happens, use one of the options below:
+
+```bat
+:: Recommended: fix the npm shim
+:: Edit %AppData%\npm\terminator.cmd
+:: Change the last line to:
+node "%dp0%\node_modules\terminator\dist\cli.mjs" %*
+
+:: Temporary session alias
+doskey terminator=node "%AppData%\npm\node_modules\terminator\dist\cli.mjs" $*
+
+:: Direct run (always works)
+node .\dist\cli.mjs -s "whoami"
+
+```
+
 ## Usage
 
 ### Basic prompt
