@@ -4,7 +4,7 @@ Terminator is a CLI that converts natural language into shell commands or script
 
 ![Terminator demo](doc/assets/terminator-banner.jpg)
 See our introduction page!
-<https://github.com/oodadoudou/Terminator.git>
+<https://terminator-page.vercel.app/>
 
 ## Why Terminator
 
