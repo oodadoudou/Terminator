@@ -14,8 +14,8 @@ scripts. It shows the generated script and an explanation, then asks you to
 
 ```bash
 # Clone the repository
-git clone https://github.com/oodadoudou/AI-terminial.git
-cd AI-terminial
+git clone https://github.com/oodadoudou/Terminator.git
+cd Terminator
 
 # Install dependencies and build
 npm install
