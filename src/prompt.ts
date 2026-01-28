@@ -131,7 +131,7 @@ export async function prompt({
     }
     spin.stop('');
     console.log('');
-    renderExplanation(explanationText);
+    renderExplanation(explanationText, script);
     console.log('');
   }
 
@@ -256,7 +256,7 @@ async function revisionFlow(
     const explanationText = await readExplanation(() => {});
     infoSpin.stop('');
     console.log('');
-    renderExplanation(explanationText);
+    renderExplanation(explanationText, script);
     console.log('');
   }
 
@@ -294,25 +294,39 @@ const createLinePrefixWriter = (
   };
 };
 
-const renderExplanation = (text: string) => {
-  const lines = formatExplanation(text);
+const renderExplanation = (text: string, script: string) => {
+  const lines = formatExplanation(text, script);
   console.log(`${HOT_PINK}Explanation:${RESET_COLOR}`);
   for (const line of lines) {
     console.log(line);
   }
 };
 
-const formatExplanation = (text: string) => {
-  const cleaned = (text ?? '').replace(/\r\n/g, '\n').trim();
-  const normalized = cleaned.replace(/\*\*(Description|Steps)\*\*/gi, '$1');
-  const lines = normalized.split('\n');
+const formatExplanation = (text: string, script: string) => {
+  const cleaned = sanitizeExplanation(text ?? '').replace(/\r\n/g, '\n').trim();
+  const lines = cleaned.split('\n');
+  const otherLines: string[] = [];
+  const commandParts: string[] = [];
   const descriptionParts: string[] = [];
   const stepsParts: string[] = [];
-  let section: 'description' | 'steps' | null = null;
+  const outputParts: string[] = [];
+  let section: 'command' | 'description' | 'steps' | 'output' | null = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
+    const commandMatch = trimmed.match(/^Command:\s*(.*)$/i);
+    if (commandMatch) {
+      section = 'command';
+      if (commandMatch[1]) commandParts.push(commandMatch[1].trim());
+      continue;
+    }
+    const scriptMatch = trimmed.match(/^Script:\s*(.*)$/i);
+    if (scriptMatch) {
+      section = 'command';
+      if (scriptMatch[1]) commandParts.push(scriptMatch[1].trim());
+      continue;
+    }
     const descMatch = trimmed.match(/^Description:\s*(.*)$/i);
     if (descMatch) {
       section = 'description';
@@ -325,35 +339,69 @@ const formatExplanation = (text: string) => {
       if (stepsMatch[1]) stepsParts.push(stepsMatch[1].trim());
       continue;
     }
-    if (section === 'steps') {
-      stepsParts.push(trimmed);
-    } else {
+    const outputMatch = trimmed.match(/^Output:\s*(.*)$/i);
+    if (outputMatch) {
+      section = 'output';
+      if (outputMatch[1]) outputParts.push(outputMatch[1].trim());
+      continue;
+    }
+    if (section === 'command') {
+      commandParts.push(trimmed);
+    } else if (section === 'description') {
       descriptionParts.push(trimmed);
+    } else if (section === 'steps') {
+      stepsParts.push(trimmed);
+    } else if (section === 'output') {
+      outputParts.push(trimmed);
+    } else {
+      otherLines.push(trimmed);
     }
   }
 
+  const fallbackDescription = otherLines.join(' ').replace(/\s+/g, ' ').trim();
   const description = descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
-  const stepItems: string[] = [];
+  const outputLine = outputParts.join(' ').replace(/\s+/g, ' ').trim();
+  const commandLine = commandParts.join(' ').replace(/\s+/g, ' ').trim();
+  const scriptCommand =
+    script
+      .split('\n')
+      .map((line) => line.trim())
+      .find((line) => line.length > 0) ?? '';
 
+  const stepItems: string[] = [];
   for (const line of stepsParts) {
     const match = line.match(/^(?:[-*]|\d+[).])\s*(.+)$/);
     if (match) {
       stepItems.push(match[1].trim());
+    } else {
+      stepItems.push(line.trim());
     }
   }
 
-  const output: string[] = [];
-  output.push(`- Description: ${description}`);
+  const resolvedCommand = commandLine || scriptCommand || '(unknown)';
+  const resolvedDescription = description || fallbackDescription || '(unknown)';
+  const resolvedOutput = outputLine || '(unknown)';
 
+  const output: string[] = [];
+  output.push(`- Command: ${resolvedCommand}`);
+  output.push(`- Description: ${resolvedDescription}`);
   if (stepItems.length === 0) {
     output.push('- Steps: (none)');
-    return output;
+  } else {
+    output.push('- Steps:');
+    stepItems.forEach((step, index) => {
+      output.push(`  ${index + 1}) ${step}`);
+    });
   }
-
-  output.push('- Steps:');
-  stepItems.forEach((step, index) => {
-    output.push(`  ${index + 1}) ${step}`);
-  });
+  output.push(`- Output: ${resolvedOutput}`);
 
   return output;
 };
+
+const sanitizeExplanation = (text: string) =>
+  text
+    .replace(/`/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/^#+\s*/gm, '')
+    .replace(/\r\n/g, '\n');

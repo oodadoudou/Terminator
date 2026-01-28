@@ -33,6 +33,32 @@ terminator -s "whoami"
 terminator chat
 ```
 
+## Docker
+
+Build only:
+
+```bash
+docker build -t terminator:dev .
+```
+
+Build + run (demo):
+
+```bash
+docker build -t terminator:dev . && \
+docker run --rm -it \
+  -v "$HOME/.terminator:/root/.terminator" \
+  terminator:dev --version
+```
+
+Build + run (prompt):
+
+```bash
+docker build -t terminator:dev . && \
+docker run --rm -it \
+  -v "$HOME/.terminator:/root/.terminator" \
+  terminator:dev -s "whoami"
+```
+
 ## Config
 
 ```bash
