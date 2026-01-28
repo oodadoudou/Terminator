@@ -6,7 +6,6 @@
 *.sublime-workspace
 *.sublime-project
 AGENTS.md
-doc/
 .DS_Store
 node_modules/
 dist/
