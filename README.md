@@ -27,14 +27,6 @@ npm run build
 # Install globally from local folder
 npm install -g .
 ````
-
-### Verify
-
-```bash
-terminator --version
-terminator -s "whoami"
-```
-
 ## Configure
 
 Open interactive config UI:
@@ -62,6 +54,13 @@ Config keys:
 Config file:
 
 * `~/.terminator`
+
+### Verify
+
+```bash
+terminator --version
+terminator -s "whoami"
+```
 
 ## Usage
 
