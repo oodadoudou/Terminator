@@ -3,6 +3,8 @@
 Terminator is a CLI that converts natural language into shell commands or scripts. It prints the generated command and a structured explanation, then asks you to **Run / Revise / Edit / Copy / Cancel** before execution.
 
 ![Terminator demo](doc/assets/terminator-banner.jpg)
+See our introduction page!
+<https://github.com/oodadoudou/Terminator.git>
 
 ## Why Terminator
 
