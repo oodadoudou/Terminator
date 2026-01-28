@@ -35,6 +35,11 @@ type ConfirmOptions = {
   initialValue?: boolean;
 };
 
+const HOT_PINK = '\x1b[38;2;255;46;126m';
+const BLINK = '\x1b[5m';
+const GREY = '\x1b[90m';
+const RESET = '\x1b[0m';
+
 const getSelectLabelWidth = (labels: string[], format?: SelectFormatOptions) => {
   if (typeof format?.labelWidth === 'number') {
     return format.labelWidth;
@@ -55,12 +60,15 @@ export const text = async (opts: TextOptions) => {
     render() {
       const placeholder = opts.placeholder ?? '';
       const hasValue = Boolean(this.value);
-      const activeValue = hasValue ? this.valueWithCursor : placeholder;
+      const activeValue = hasValue
+        ? this.valueWithCursor
+        : `${GREY}${placeholder}${RESET}`;
       const finalValue =
         this.state === 'submit' || this.state === 'cancel'
           ? this.value ?? ''
           : activeValue;
-      const lines = [`${opts.message}`, `> ${finalValue}`];
+      const caret = `${HOT_PINK}${BLINK}|${RESET}`;
+      const lines = [`${opts.message}`, `>${caret} ${finalValue}`];
       if (this.state === 'error' && this.error) {
         lines.push(this.error);
       }
@@ -97,7 +105,10 @@ export const select = async <T>(opts: SelectOptions<T>) => {
           format.includeHints !== false && option.hint
             ? option.hint
             : '';
-        return `${prefix}${paddedLabel}${hint}`;
+        const line = `${prefix}${paddedLabel}${hint}`;
+        return isActive
+          ? `\x1b[38;2;255;46;126m${line}\x1b[0m`
+          : line;
       });
       return `${opts.message}\n${lines.join('\n')}`;
     },

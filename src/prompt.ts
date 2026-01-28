@@ -12,6 +12,9 @@ import i18n from './helpers/i18n';
 import { appendToShellHistory } from './helpers/shell-history';
 import * as p from './helpers/plain-prompts';
 
+const HOT_PINK = '\x1b[38;2;255;46;126m';
+const RESET_COLOR = '\x1b[0m';
+
 const init = async () => {
   try {
     const { LANGUAGE: language } = await getConfig();
@@ -108,27 +111,28 @@ export async function prompt({
   console.log(`${projectName} ▶ Generated command`);
   console.log('');
   const script = await readScript(
-    createLinePrefixWriter('> ', process.stdout.write.bind(process.stdout))
+    createLinePrefixWriter(
+      `${HOT_PINK}>${RESET_COLOR} `,
+      process.stdout.write.bind(process.stdout)
+    )
   );
   console.log('');
   if (!skipCommandExplanation) {
     spin.start(i18n.t(`Getting explanation...`));
-    const info = await readInfo(process.stdout.write.bind(process.stdout));
-    if (!info) {
+    let explanationText = await readInfo(() => {});
+    if (!explanationText) {
       const { readExplanation } = await getExplanation({
         script,
         key,
         model,
         apiEndpoint,
       });
-      spin.stop(i18n.t('Explanation') + ':');
-      console.log('');
-      await readExplanation(process.stdout.write.bind(process.stdout));
-      console.log('');
-    } else {
-      spin.stop('');
-      console.log('');
+      explanationText = await readExplanation(() => {});
     }
+    spin.stop('');
+    console.log('');
+    renderExplanation(explanationText);
+    console.log('');
   }
 
   await runOrReviseFlow(script, key, model, apiEndpoint, silentMode);
@@ -144,7 +148,7 @@ async function runOrReviseFlow(
   const emptyScript = script.trim() === '';
 
   const answer: symbol | (() => any) = await p.select({
-    message: 'What next?',
+    message: `${HOT_PINK}▶ What next?${RESET_COLOR}`,
     format: {
       activePrefix: '  → ',
       inactivePrefix: '      ',
@@ -232,7 +236,10 @@ async function revisionFlow(
   console.log(`${projectName} ▶ Generated command`);
   console.log('');
   const script = await readScript(
-    createLinePrefixWriter('> ', process.stdout.write.bind(process.stdout))
+    createLinePrefixWriter(
+      `${HOT_PINK}>${RESET_COLOR} `,
+      process.stdout.write.bind(process.stdout)
+    )
   );
   console.log('');
 
@@ -246,9 +253,10 @@ async function revisionFlow(
       apiEndpoint,
     });
 
-    infoSpin.stop(`${i18n.t('Explanation')}:`);
+    const explanationText = await readExplanation(() => {});
+    infoSpin.stop('');
     console.log('');
-    await readExplanation(process.stdout.write.bind(process.stdout));
+    renderExplanation(explanationText);
     console.log('');
   }
 
@@ -284,4 +292,68 @@ const createLinePrefixWriter = (
     }
     write(output);
   };
+};
+
+const renderExplanation = (text: string) => {
+  const lines = formatExplanation(text);
+  console.log(`${HOT_PINK}Explanation:${RESET_COLOR}`);
+  for (const line of lines) {
+    console.log(line);
+  }
+};
+
+const formatExplanation = (text: string) => {
+  const cleaned = (text ?? '').replace(/\r\n/g, '\n').trim();
+  const normalized = cleaned.replace(/\*\*(Description|Steps)\*\*/gi, '$1');
+  const lines = normalized.split('\n');
+  const descriptionParts: string[] = [];
+  const stepsParts: string[] = [];
+  let section: 'description' | 'steps' | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const descMatch = trimmed.match(/^Description:\s*(.*)$/i);
+    if (descMatch) {
+      section = 'description';
+      if (descMatch[1]) descriptionParts.push(descMatch[1].trim());
+      continue;
+    }
+    const stepsMatch = trimmed.match(/^Steps:\s*(.*)$/i);
+    if (stepsMatch) {
+      section = 'steps';
+      if (stepsMatch[1]) stepsParts.push(stepsMatch[1].trim());
+      continue;
+    }
+    if (section === 'steps') {
+      stepsParts.push(trimmed);
+    } else {
+      descriptionParts.push(trimmed);
+    }
+  }
+
+  const description = descriptionParts.join(' ').replace(/\s+/g, ' ').trim();
+  const stepItems: string[] = [];
+
+  for (const line of stepsParts) {
+    const match = line.match(/^(?:[-*]|\d+[).])\s*(.+)$/);
+    if (match) {
+      stepItems.push(match[1].trim());
+    }
+  }
+
+  const output: string[] = [];
+  output.push(`- Description: ${description}`);
+
+  if (stepItems.length === 0) {
+    output.push('- Steps: (none)');
+    return output;
+  }
+
+  output.push('- Steps:');
+  stepItems.forEach((step, index) => {
+    output.push(`  ${index + 1}) ${step}`);
+  });
+
+  return output;
 };

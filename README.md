@@ -28,7 +28,7 @@ npm install -g .
 ## Usage
 
 ```bash
-terminator "list all log files"
+terminator "list all file in the current directory"
 terminator -s "whoami"
 terminator chat
 ```
