@@ -168,6 +168,8 @@ Default values used for the hackathon environment:
 
 You can override any value via `terminator config set ...`.
 
+LLMs used: https://llm.aiqu.ai provided by Aixia.
+
 ## Safety
 
 * Terminator executes commands **only** if you explicitly select **Run**
