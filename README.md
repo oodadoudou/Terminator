@@ -6,8 +6,23 @@ scripts. It shows the generated script and an explanation, then asks you to
 
 ## Install
 
+### Prerequisites
+
+- Node.js (v18+)
+
+### Installation
+
 ```bash
-npm install -g terminator
+# Clone the repository
+git clone https://github.com/oodadoudou/AI-terminial.git
+cd AI-terminial
+
+# Install dependencies and build
+npm install
+npm run build
+
+# Link the executable globally
+npm install -g .
 ```
 
 ## Usage
