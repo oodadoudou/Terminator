@@ -17,6 +17,6 @@ export const handleCliError = (error: any) => {
         'Please open a Bug report with the information above'
       )}:`
     );
-    console.error(`${indent}https://github.com/BuilderIO/terminator/issues/new`);
+    console.error(`${indent}https://github.com/oodadoudou/Terminator/issues/new`);
   }
 };
