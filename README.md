@@ -161,7 +161,7 @@ docker run --rm -it \
   terminator:dev -s "whoami"
 ```
 
-## Defaults (Hackathon)
+## Defaults (Hackathon)    
 
 Default values used for the hackathon environment:
 
