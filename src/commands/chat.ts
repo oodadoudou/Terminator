@@ -1,5 +1,5 @@
 import { command } from 'cleye';
-import { spinner, intro, outro, text, isCancel } from '@clack/prompts';
+import { spinner, intro, outro, text, isCancel } from '../helpers/plain-prompts';
 import { cyan, green } from 'kolorist';
 import { generateCompletion, readData } from '../helpers/completion';
 import { getConfig } from '../helpers/config';
