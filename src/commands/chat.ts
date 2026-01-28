@@ -1,11 +1,12 @@
 import { command } from 'cleye';
-import { spinner, intro, outro, text, isCancel } from '@clack/prompts';
+import { spinner, intro, outro, text, isCancel } from '../helpers/plain-prompts';
 import { cyan, green } from 'kolorist';
 import { generateCompletion, readData } from '../helpers/completion';
 import { getConfig } from '../helpers/config';
 import { streamToIterable } from '../helpers/stream-to-iterable';
 import { ChatCompletionRequestMessage } from 'openai';
 import i18n from '../helpers/i18n';
+import { printBanner } from '../helpers/banner';
 
 export default command(
   {
@@ -24,6 +25,7 @@ export default command(
     const chatHistory: ChatCompletionRequestMessage[] = [];
 
     console.log('');
+    printBanner();
     intro(i18n.t('Starting new conversation'));
     const prompt = async () => {
       const msgYou = `${i18n.t('You')}:`;

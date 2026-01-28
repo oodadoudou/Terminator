@@ -6,6 +6,7 @@ import update from './commands/update';
 import chat from './commands/chat';
 import { commandName } from './helpers/constants';
 import { handleCliError } from './helpers/error';
+import { printBanner } from './helpers/banner';
 import { prompt } from './prompt';
 
 cli(
@@ -33,6 +34,7 @@ cli(
     if (promptText.trim() === 'update') {
       update.callback?.(argv);
     } else {
+      printBanner();
       prompt({ usePrompt: promptText, silentMode }).catch((error) => {
         console.error(`\n${red('✖')} ${error.message}`);
         handleCliError(error);

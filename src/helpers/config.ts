@@ -5,11 +5,11 @@ import ini from 'ini';
 import type { TiktokenModel } from '@dqbd/tiktoken';
 import { commandName } from './constants';
 import { KnownError, handleCliError } from './error';
-import * as p from '@clack/prompts';
 import { red } from 'kolorist';
 import i18n from './i18n';
 import { getModels } from './completion';
 import { Model } from 'openai';
+import * as p from './plain-prompts';
 
 const { hasOwnProperty } = Object.prototype;
 export const hasOwn = (object: unknown, key: PropertyKey) =>
