@@ -59,7 +59,7 @@ Config is stored locally in `~/.terminator`.
 
 ## Hackathon
 
-This project is for the Chalmers AI Society x GoWest First-Ever Joint Hackathon and the Builderbase AIxia track.
+This project is for the Chalmers AI Society x GoWest First-Ever Joint Hackathon and the Builderbase AIxia track .
 
 Track link:
 
