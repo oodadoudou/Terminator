@@ -117,18 +117,18 @@ export async function generateCompletion({
 
         Full message from OpenAI:
       ` +
-          '\n\n' +
-          messageString +
-          '\n'
+        '\n\n' +
+        messageString +
+        '\n'
       );
     } else if (response && message) {
       throw new KnownError(
         dedent`
         Request to OpenAI failed with status ${response?.status}:
       ` +
-          '\n\n' +
-          messageString +
-          '\n'
+        '\n\n' +
+        messageString +
+        '\n'
       );
     }
 
@@ -191,76 +191,91 @@ export const readData =
     iterableStream: AsyncGenerator<string, void>,
     ...excluded: (RegExp | string | undefined)[]
   ) =>
-  (writer: (data: string) => void): Promise<string> =>
-    new Promise(async (resolve) => {
-      let stopTextStream = false;
-      let data = '';
-      let content = '';
-      let dataStart = false;
-      let buffer = ''; // This buffer will temporarily hold incoming data only for detecting the start
+    (writer: (data: string) => void): Promise<string> =>
+      new Promise(async (resolve) => {
+        let stopTextStream = false;
+        let data = '';
+        let content = '';
+        let dataStart = false;
+        let buffer = ''; // This buffer will temporarily hold incoming data only for detecting the start
 
-      const [excludedPrefix] = excluded;
-      const stopTextStreamKeys = ['q', 'escape']; //Group of keys that stop the text stream
+        const [excludedPrefix] = excluded;
+        const stopTextStreamKeys = ['q', 'escape']; //Group of keys that stop the text stream
 
-      const rl = readline.createInterface({
-        input: process.stdin,
-      });
+        const rl = readline.createInterface({
+          input: process.stdin,
+        });
 
-      process.stdin.setRawMode(true);
+        process.stdin.setRawMode(true);
 
-      process.stdin.on('keypress', (key, data) => {
-        if (stopTextStreamKeys.includes(data.name)) {
-          stopTextStream = true;
-        }
-      });
-      for await (const chunk of iterableStream) {
-        const payloads = chunk.toString().split('\n\n');
-        for (const payload of payloads) {
-          if (payload.includes('[DONE]') || stopTextStream) {
-            dataStart = false;
-            resolve(data);
-            return;
+        process.stdin.on('keypress', (key, data) => {
+          if (stopTextStreamKeys.includes(data.name)) {
+            stopTextStream = true;
           }
+        });
+        for await (const chunk of iterableStream) {
+          const payloads = chunk.toString().split('\n\n');
+          for (const payload of payloads) {
+            if (payload.includes('[DONE]') || stopTextStream) {
+              if (!dataStart && data === '' && buffer.length > 0) {
+                data = buffer;
+                writer(buffer);
+              }
+              dataStart = false;
+              resolve(data);
+              return;
+            }
 
-          if (payload.startsWith('data:')) {
-            content = parseContent(payload);
-            // Use buffer only for start detection
-            if (!dataStart) {
-              // Append content to the buffer
-              buffer += content;
-              if (buffer.match(excludedPrefix ?? '')) {
-                dataStart = true;
-                // Clear the buffer once it has served its purpose
-                buffer = '';
-                if (excludedPrefix) break;
+            if (payload.startsWith('data:')) {
+              content = parseContent(payload);
+              // Use buffer only for start detection
+              if (!dataStart) {
+                // Append content to the buffer
+                buffer += content;
+                const match = buffer.match(excludedPrefix ?? '');
+                if (match) {
+                  const matchStr = match[0];
+                  const remaining = buffer.slice(buffer.indexOf(matchStr) + matchStr.length);
+
+                  dataStart = true;
+                  buffer = '';
+
+                  if (remaining) {
+                    const contentWithoutExcluded = stripRegexPatterns(
+                      remaining,
+                      excluded
+                    );
+                    data += contentWithoutExcluded;
+                    writer(contentWithoutExcluded);
+                  }
+
+                  if (excludedPrefix) break;
+                }
+              } else if (content) {
+                const contentWithoutExcluded = stripRegexPatterns(
+                  content,
+                  excluded
+                );
+
+                data += contentWithoutExcluded;
+                writer(contentWithoutExcluded);
               }
             }
-
-            if (dataStart && content) {
-              const contentWithoutExcluded = stripRegexPatterns(
-                content,
-                excluded
-              );
-
-              data += contentWithoutExcluded;
-              writer(contentWithoutExcluded);
-            }
           }
         }
-      }
 
-      function parseContent(payload: string): string {
-        const data = payload.replaceAll(/(\n)?^data:\s*/g, '');
-        try {
-          const delta = JSON.parse(data.trim());
-          return delta.choices?.[0]?.delta?.content ?? '';
-        } catch (error) {
-          return `Error with JSON.parse and ${payload}.\n${error}`;
+        function parseContent(payload: string): string {
+          const data = payload.replaceAll(/(\n)?^data:\s*/g, '');
+          try {
+            const delta = JSON.parse(data.trim());
+            return delta.choices?.[0]?.delta?.content ?? '';
+          } catch (error) {
+            return `Error with JSON.parse and ${payload}.\n${error}`;
+          }
         }
-      }
 
-      resolve(data);
-    });
+        resolve(data);
+      });
 
 function getExplanationPrompt(script: string) {
   return dedent`
